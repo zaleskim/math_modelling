@@ -10,17 +10,18 @@ from .constants import Constants as const
 
 
 class Reactor(ModelInterface):
-    def __init__(self, cA0=0.5, T0=350.0):
-        self.x0 = [cA0, T0]  # Initial concentration [mol/L] and temperature [K]
+    def __init__(self, C0=0.5, T0=350.0, Tcf=300.0):
+        self.x0 = [C0, T0, Tcf]  # Initial concentration [mol/L] and tank and coolant temperatures [K]
 
     @staticmethod
     def sys_deriv(t, x0: [], u: []):
-        cA, T = x0
-        Tc = u
-        dcAdt = (const.q / const.V) * (const.cAi - cA) - const.k(T) * cA
-        dTdt = (const.q / const.V) * (const.Ti - T) + (-const.dHr / const.rho / const.Cp) \
-               * const.k(T) * cA + (const.UA / const.V / const.rho / const.Cp) * (Tc - T)
-        return [dcAdt, dTdt]
+        qc = u
+        C, T, Tc = x0
+        dC = (const.q / const.V) * (const.Cf - C) - const.k(T) * C
+        dT = (const.q / const.V) * (const.Tf - T) + (-const.dHr / const.rho / const.Cp) * const.k(T) *\
+             C + (const.UA / const.V / const.rho / const.Cp) * (Tc - T)
+        dTc = (qc / const.Vc) * (const.Tcf - Tc) + (const.UA / const.Vc / const.rho / const.Cp) * (T - Tc)
+        return [dC, dT, dTc]
 
     def sys_solve(self, u: [], t_span):
         solution = solve_ivp(self.sys_deriv, t_span, self.x0, args=(u,))
